@@ -1,0 +1,5 @@
+room_type_id,room_type,room_type_es,is_entire_home
+1,Entire home/apt,Vivienda completa,true
+2,Private room,Habitación privada,false
+3,Hotel room,Habitación de hotel,false
+4,Shared room,Habitación compartida,false

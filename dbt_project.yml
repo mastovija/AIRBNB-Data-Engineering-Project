@@ -1,0 +1,36 @@
+name: 'airbnb_andalucia'
+version: '1.0.0'
+config-version: 2
+
+profile: 'airbnb_andalucia'
+
+model-paths: ["models"]
+seed-paths: ["seeds"]
+test-paths: ["tests"]
+macro-paths: ["macros"]
+
+target-path: "target"
+clean-targets: ["target", "dbt_packages"]
+
+models:
+  airbnb_andalucia:
+    silver:
+      +schema: SILVER
+      +materialized: view
+    gold:
+      +schema: GOLD
+      +materialized: table
+      dims:
+        +materialized: table
+      facts:
+        fact_listings:
+          +materialized: incremental
+          +unique_key: listing_id
+        fact_reviews_monthly:
+          +materialized: table
+      marts:
+        +materialized: table
+
+seeds:
+  airbnb_andalucia:
+    +schema: GOLD

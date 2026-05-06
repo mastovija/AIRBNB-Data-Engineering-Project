@@ -1,0 +1,86 @@
+version: 2
+
+models:
+  - name: stg_listings__details
+    description: "Información descriptiva del inmueble limpia y tipada desde Bronze"
+    columns:
+      - name: listing_id
+        description: "Identificador único del listing"
+        tests:
+          - unique
+          - not_null
+      - name: room_type
+        description: "Tipo de habitación"
+        tests:
+          - not_null
+          - accepted_values:
+              config:
+                severity: warn
+              arguments:
+                values: ['Entire home/apt', 'Private room', 'Hotel room', 'Shared room']
+      - name: city
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['sevilla', 'malaga']
+
+  - name: stg_listings__host
+    description: "Información del anfitrión limpia y tipada desde Bronze"
+    columns:
+      - name: host_id
+        description: "Identificador del host"
+        tests:
+          - not_null
+      - name: listing_id
+        tests:
+          - not_null
+      - name: host_profile
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['Host individual', 'Multipropiedad', 'Operador profesional']
+
+  - name: stg_listings__location
+    description: "Información geográfica del listing"
+    columns:
+      - name: listing_id
+        tests:
+          - unique
+          - not_null
+      - name: neighbourhood_cleansed
+        tests:
+          - not_null
+
+  - name: stg_listings__availability
+    description: "Precio, disponibilidad y ocupación del listing"
+    columns:
+      - name: listing_id
+        tests:
+          - unique
+          - not_null
+      - name: availability_profile
+        tests:
+          - accepted_values:
+              arguments:
+                values: ['Casi sin disponibilidad', 'Uso parcial', 'Alta disponibilidad']
+
+  - name: stg_listings__reviews_scores
+    description: "Puntuaciones y métricas de actividad de reviews"
+    columns:
+      - name: listing_id
+        tests:
+          - unique
+          - not_null
+
+  - name: stg_reviews
+    description: "Reseñas individuales limpias y tipadas desde Bronze"
+    columns:
+      - name: review_id
+        tests:
+          - unique
+          - not_null
+      - name: listing_id
+        tests:
+          - not_null
