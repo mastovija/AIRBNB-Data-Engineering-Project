@@ -2,9 +2,8 @@ version: 2
 
 sources:
   - name: bronze
-    database: AIRBNB_PROJECT
+    database: "{{ env_var('DBT_DATABASE_BRONZE', 'AIRBNB_DEV_BRONZE') }}"
     schema: BRONZE
-
     tables:
       - name: raw_listings
       - name: raw_reviews

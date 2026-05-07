@@ -2,35 +2,22 @@ name: 'airbnb_andalucia'
 version: '1.0.0'
 config-version: 2
 
-profile: 'airbnb_andalucia'
-
-model-paths: ["models"]
-seed-paths: ["seeds"]
-test-paths: ["tests"]
-macro-paths: ["macros"]
-
-target-path: "target"
-clean-targets: ["target", "dbt_packages"]
-
 models:
   airbnb_andalucia:
     silver:
+      +database: "{{ env_var('DBT_DATABASE_SILVER', 'AIRBNB_DEV_SILVER') }}"
       +schema: SILVER
       +materialized: view
     gold:
+      +database: "{{ env_var('DBT_DATABASE_GOLD', 'AIRBNB_DEV_GOLD') }}"
       +schema: GOLD
       +materialized: table
-      dims:
-        +materialized: table
       facts:
         fact_listings:
           +materialized: incremental
           +unique_key: listing_id
-        fact_reviews_monthly:
-          +materialized: table
-      marts:
-        +materialized: table
 
 seeds:
   airbnb_andalucia:
+    +database: "{{ env_var('DBT_DATABASE_GOLD', 'AIRBNB_DEV_GOLD') }}"
     +schema: GOLD
