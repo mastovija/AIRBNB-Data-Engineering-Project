@@ -2,15 +2,19 @@ version: 2
 
 models:
   - name: stg_listings__details
-    description: "Información descriptiva del inmueble limpia y tipada desde Bronze"
+    description: >
+      Información descriptiva del inmueble limpia y tipada.
+      Tabla central de Silver: todas las demás tablas de listings
+      se unen a esta por listing_id. La columna is_entire_home
+      (derivada de room_type) es el KPI central del proyecto.
     columns:
       - name: listing_id
-        description: "Identificador único del listing"
+        description: "PK — identificador único del listing"
         tests:
           - unique
           - not_null
       - name: room_type
-        description: "Tipo de habitación"
+        description: "Tipo de habitación: Entire home, Private room, Hotel room o Shared room"
         tests:
           - not_null
           - accepted_values:
@@ -19,6 +23,7 @@ models:
               arguments:
                 values: ['Entire home/apt', 'Private room', 'Hotel room', 'Shared room']
       - name: city
+        description: "Ciudad del listing: sevilla o malaga"
         tests:
           - not_null
           - accepted_values:
@@ -26,16 +31,23 @@ models:
                 values: ['sevilla', 'malaga']
 
   - name: stg_listings__host
-    description: "Información del anfitrión limpia y tipada desde Bronze"
+    description: >
+      Información del anfitrión por listing. Una fila por listing,
+      no por host — la deduplicación se hace en dim_host (Gold).
+      host_profile clasifica al host en tres niveles de
+      profesionalización según el número de viviendas completas
+      que gestiona.
     columns:
       - name: host_id
-        description: "Identificador del host"
+        description: "Identificador del host — puede repetirse si el host tiene varios listings"
         tests:
           - not_null
       - name: listing_id
+        description: "FK hacia stg_listings__details"
         tests:
           - not_null
       - name: host_profile
+        description: "Clasificación: Host individual (1 VTC) / Multipropiedad (2-4) / Operador profesional (5+)"
         tests:
           - not_null
           - accepted_values:
@@ -43,44 +55,68 @@ models:
                 values: ['Host individual', 'Multipropiedad', 'Operador profesional']
 
   - name: stg_listings__location
-    description: "Información geográfica del listing"
+    description: >
+      Información geográfica del listing.
+      neighbourhood_cleansed es la referencia geográfica principal
+      del proyecto — normalizada por Inside Airbnb, sin nulos.
     columns:
       - name: listing_id
+        description: "PK — una fila por listing"
         tests:
           - unique
           - not_null
       - name: neighbourhood_cleansed
+        description: "Barrio normalizado por Inside Airbnb — referencia geográfica principal"
         tests:
           - not_null
 
   - name: stg_listings__availability
-    description: "Precio, disponibilidad y ocupación del listing"
+    description: >
+      Precio, disponibilidad y ocupación del listing.
+      Tabla analíticamente más importante de Silver.
+      Implementa winsorización del precio al P99 por ciudad
+      para neutralizar outliers sin eliminar filas.
+      price_per_person normaliza listings de distinta capacidad.
     columns:
       - name: listing_id
+        description: "PK — una fila por listing"
         tests:
           - unique
           - not_null
       - name: availability_profile
+        description: "Categoría de disponibilidad anual: Casi sin disponibilidad / Uso parcial / Alta disponibilidad"
         tests:
           - accepted_values:
               arguments:
                 values: ['Casi sin disponibilidad', 'Uso parcial', 'Alta disponibilidad']
 
   - name: stg_listings__reviews_scores
-    description: "Puntuaciones y métricas de actividad de reviews"
+    description: >
+      Puntuaciones y métricas de actividad de reviews por listing.
+      days_since_last_review se calcula aquí para no repetir
+      la lógica en cada modelo de Gold que necesite detectar
+      listings inactivos.
     columns:
       - name: listing_id
+        description: "PK — una fila por listing"
         tests:
           - unique
           - not_null
 
   - name: stg_reviews
-    description: "Reseñas individuales limpias y tipadas desde Bronze"
+    description: >
+      Reseñas individuales limpias y tipadas.
+      El campo comments se descarta por volumen y falta de valor
+      analítico cuantitativo. Las columnas review_year, review_month
+      y review_month_start se precalculan aquí para simplificar
+      las agregaciones en fact_reviews_monthly (Gold).
     columns:
       - name: review_id
+        description: "PK — identificador único de la review"
         tests:
           - unique
           - not_null
       - name: listing_id
+        description: "FK hacia stg_listings__details"
         tests:
           - not_null
