@@ -1,0 +1,156 @@
+version: 2
+
+models:
+
+  - name: dim_neighbourhood
+    description: >
+      Una fila por barrio y ciudad. Dimensión minimalista: solo
+      atributos estables (nombre y ciudad). Las métricas agregadas
+      van en mart_neighbourhood_pressure, no aquí, porque cambian
+      con cada snapshot. La clave natural es neighbourhood_cleansed
+      + city porque el mismo nombre puede existir en las dos ciudades.
+    columns:
+      - name: neighbourhood_id
+        description: "PK surrogate — hash MD5 de neighbourhood_cleansed + city"
+        tests:
+          - unique
+          - not_null
+      - name: neighbourhood_cleansed
+        description: "Nombre del barrio normalizado por Inside Airbnb"
+        tests:
+          - not_null
+      - name: city
+        description: "Ciudad: sevilla o malaga"
+        tests:
+          - not_null
+
+  - name: dim_listing
+    description: >
+      Una fila por listing con información descriptiva del inmueble.
+      Combina stg_listings__details y stg_listings__location.
+      Contiene las FKs a dim_neighbourhood y dim_room_type.
+      latitude y longitude son necesarias para los mapas de PowerBI.
+    columns:
+      - name: listing_id
+        description: "PK — identificador único del listing"
+        tests:
+          - unique
+          - not_null
+      - name: is_entire_home
+        description: "TRUE si el listing es una vivienda completa — KPI central del proyecto"
+        tests:
+          - not_null
+
+  - name: dim_host
+    description: >
+      Una fila por host y ciudad, deduplicada desde stg_listings__host
+      (que tiene una fila por listing). La clave natural es host_id + city
+      porque Inside Airbnb calcula calculated_host_listings_count por ciudad.
+      host_sk es el surrogate key para el SCD Tipo 2: el snapshot de dbt
+      añade valid_from, valid_to e is_current para rastrear cambios históricos.
+    columns:
+      - name: host_sk
+        description: "PK surrogate — hash MD5 de host_id + city. FK en fact_listings."
+        tests:
+          - unique
+          - not_null
+      - name: host_id
+        description: "Natural key del host — se repite en histórico SCD2"
+        tests:
+          - not_null
+      - name: host_profile
+        description: "Host individual (1) / Multipropiedad (2-4) / Operador profesional (5+)"
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['Host individual', 'Multipropiedad', 'Operador profesional']
+
+  - name: fact_listings
+    description: >
+      Tabla central del esquema estrella. Una fila por listing con
+      todas las métricas numéricas y las 4 FKs a dimensiones.
+      Materialización incremental: solo inserta filas con snapshot_date
+      posterior al máximo ya cargado. is_active_listing se calcula aquí
+      porque combina columnas de dos tablas Silver distintas.
+      is_entire_home, host_profile y city están desnormalizadas
+      (degenerate dimensions) para rendimiento en PowerBI.
+    columns:
+      - name: listing_id
+        description: "PK — identificador único del listing"
+        tests:
+          - unique
+          - not_null
+      - name: is_active_listing
+        description: >
+          TRUE si el listing tiene precio, disponibilidad > 0 y
+          actividad reciente (review en últimos 12 meses o últimos 6 meses).
+          Evita que listings zombi distorsionen las métricas.
+        tests:
+          - not_null
+      - name: snapshot_date
+        description: "Fecha del scraping — clave de la materialización incremental"
+        tests:
+          - not_null
+
+  - name: fact_reviews_monthly
+    description: >
+      Una fila por mes y ciudad con el volumen de reviews.
+      Grano distinto a fact_listings: permite analizar la evolución
+      temporal de la actividad turística (caso de uso 1.3).
+      distinct_listings es el proxy del número de alojamientos
+      activos en cada momento histórico.
+    columns:
+      - name: total_reviews
+        description: "Total de reviews recibidas ese mes en esa ciudad"
+        tests:
+          - not_null
+      - name: distinct_listings
+        description: "Listings únicos con al menos una review ese mes"
+        tests:
+          - not_null
+
+  - name: mart_neighbourhood_pressure
+    description: >
+      La tabla más importante del proyecto. Una fila por barrio
+      con todos los KPIs de presión sobre el mercado de vivienda.
+      Alimenta el mapa de calor principal de PowerBI.
+      pressure_score es un índice sintético (50% pct_entire_home +
+      30% pct_high_availability + 20% pct_multihost) para ranking.
+    columns:
+      - name: neighbourhood_cleansed
+        description: "Nombre del barrio — clave de la tabla"
+        tests:
+          - not_null
+      - name: pressure_score
+        description: "Índice compuesto de presión sobre el mercado de vivienda (0-100)"
+        tests:
+          - not_null
+
+  - name: mart_host_profile
+    description: >
+      Una fila por host con clasificación y métricas agregadas.
+      Responde a los casos de uso 2.1 (clasificación) y 2.2
+      (concentración del mercado). Combina atributos de dim_host
+      con métricas económicas de fact_listings.
+    columns:
+      - name: host_id
+        description: "Identificador del host"
+        tests:
+          - not_null
+      - name: host_profile
+        description: "Clasificación: Host individual / Multipropiedad / Operador profesional"
+        tests:
+          - not_null
+
+  - name: mart_city_comparison
+    description: >
+      Una fila por ciudad con las métricas clave de Sevilla y Málaga.
+      Responde al caso de uso 3.3 — comparativa directa entre ciudades.
+      Diseñada para las tarjetas KPI de PowerBI.
+    columns:
+      - name: city
+        description: "PK — sevilla o malaga"
+        tests:
+          - unique
+          - not_null

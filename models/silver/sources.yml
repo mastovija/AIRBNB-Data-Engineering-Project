@@ -1,0 +1,26 @@
+version: 2
+
+# Define las tablas de Bronze como fuentes de datos para dbt.
+# Usar {{ source() }} en lugar de referencias directas permite:
+# 1. Que dbt construya el linaje de datos automáticamente
+# 2. Controlar la database mediante variables de entorno
+#    (AIRBNB_DEV_BRONZE en desarrollo, AIRBNB_PROD_BRONZE en producción)
+# 3. Añadir tests de fuente (freshness, not_null) en el futuro
+
+sources:
+  - name: bronze
+    database: "{{ env_var('DBT_DATABASE_BRONZE', 'AIRBNB_DEV_BRONZE') }}"
+    schema: BRONZE
+    tables:
+      - name: raw_listings
+        description: >
+          Dato crudo de listings de Inside Airbnb para Sevilla y Málaga.
+          Snapshot de diciembre 2024. 17.929 filas, 80 columnas (79 originales
+          + columna city añadida en la carga). Todo en tipo TEXT — ninguna
+          transformación aplicada en Bronze.
+
+      - name: raw_reviews
+        description: >
+          Dato crudo de reseñas de Inside Airbnb para Sevilla y Málaga.
+          ~1.1M filas. Incluye fecha, reviewer_id y texto del comentario.
+          El texto se descarta en Silver por volumen y falta de valor analítico.

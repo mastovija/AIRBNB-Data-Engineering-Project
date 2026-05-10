@@ -1,0 +1,23 @@
+name: 'airbnb_andalucia'
+version: '1.0.0'
+config-version: 2
+
+models:
+  airbnb_andalucia:
+    silver:
+      +database: "{{ env_var('DBT_DATABASE_SILVER', 'AIRBNB_DEV_SILVER') }}"
+      +schema: SILVER
+      +materialized: view
+    gold:
+      +database: "{{ env_var('DBT_DATABASE_GOLD', 'AIRBNB_DEV_GOLD') }}"
+      +schema: GOLD
+      +materialized: table
+      facts:
+        fact_listings:
+          +materialized: incremental
+          +unique_key: listing_id
+
+seeds:
+  airbnb_andalucia:
+    +database: "{{ env_var('DBT_DATABASE_GOLD', 'AIRBNB_DEV_GOLD') }}"
+    +schema: GOLD

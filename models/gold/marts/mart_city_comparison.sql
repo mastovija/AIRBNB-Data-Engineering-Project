@@ -1,0 +1,62 @@
+-- =============================================================
+-- mart_city_comparison
+-- Una fila por ciudad. Comparativa directa Sevilla vs Málaga.
+-- Responde al caso de uso 3.3.
+-- Diseñada para las tarjetas KPI de PowerBI: cada fila es una
+-- ciudad y cada columna es una métrica comparable directamente.
+--
+-- El join a dim_host permite calcular métricas a nivel de host
+-- (total_hosts, pct_professional_operators) que no están
+-- disponibles directamente en fact_listings.
+-- =============================================================
+
+WITH fact AS (
+    SELECT * FROM {{ ref('fact_listings') }}
+),
+
+hosts AS (
+    SELECT * FROM {{ ref('dim_host') }}
+)
+
+SELECT
+    f.city,
+
+    -- Volumen total y activo
+    COUNT(*)                                               AS total_listings,
+    COUNT(CASE WHEN f.is_active_listing THEN 1 END)       AS total_active_listings,
+
+    -- Bloque 1: vivienda capturada
+    ROUND(
+        COUNT(CASE WHEN f.is_entire_home THEN 1 END)
+        / NULLIF(COUNT(*), 0) * 100, 2)                   AS pct_entire_home,
+
+    -- Bloque 3: precio
+    ROUND(MEDIAN(f.price_winsorized), 2)                  AS median_price_winsorized,
+    ROUND(AVG(f.price_per_person), 2)                     AS avg_price_per_person,
+
+    -- Bloque 3: ocupación e ingresos
+    ROUND(AVG(f.estimated_occupancy_l365d), 1)            AS avg_occupancy_days,
+    ROUND(AVG(f.estimated_revenue_l365d), 2)              AS avg_estimated_revenue,
+
+    -- Bloque 2: concentración de hosts
+    -- COUNT DISTINCT sobre dim_host para métricas a nivel de host,
+    -- no de listing (evita contar el mismo host varias veces)
+    COUNT(DISTINCT h.host_id)                             AS total_hosts,
+    ROUND(
+        COUNT(DISTINCT CASE
+            WHEN h.host_profile = 'Operador profesional'
+            THEN h.host_id END)
+        / NULLIF(COUNT(DISTINCT h.host_id), 0) * 100, 2) AS pct_professional_operators,
+
+    -- pct_multihost_listings: % de listings (no hosts) en manos
+    -- de multipropietarios — métrica distinta a pct_professional_operators
+    ROUND(
+        COUNT(CASE WHEN f.host_profile != 'Host individual' THEN 1 END)
+        / NULLIF(COUNT(*), 0) * 100, 2)                   AS pct_multihost_listings,
+
+    ROUND(AVG(f.review_scores_rating), 2)                 AS avg_review_score
+
+FROM fact f
+LEFT JOIN hosts h
+    ON f.host_sk = h.host_sk
+GROUP BY f.city
