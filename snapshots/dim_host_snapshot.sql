@@ -1,4 +1,21 @@
+-- =============================================================
+-- dim_host_snapshot
+-- Implementa SCD Tipo 2 sobre dim_host.
+-- Cada vez que se ejecuta dbt snapshot, dbt compara los valores
+-- actuales de check_cols con los del snapshot anterior.
+-- Si detecta un cambio (por ejemplo un host pasa de 2 a 5
+-- listings o cambia de categoría), cierra el registro anterior
+-- (dbt_valid_to = fecha actual) e inserta uno nuevo
+-- (dbt_valid_from = fecha actual, dbt_valid_to = NULL).
+--
+-- Con un único snapshot se explica el mecanismo.
+-- Con dos snapshots se demuestra en producción: cargar el
+-- snapshot de septiembre 2024 + ejecutar dbt snapshot muestra
+-- hosts que cambiaron de perfil entre fechas.
+-- =============================================================
+
 {% snapshot dim_host_snapshot %}
+
     {{
         config(
             target_schema='GOLD',
@@ -10,6 +27,7 @@
         )
     }}
 
+    -- Fuente: dim_host ya deduplicada (una fila por host_id + city)
     SELECT
         host_sk,
         host_id,
