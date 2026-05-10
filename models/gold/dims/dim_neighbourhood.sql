@@ -20,6 +20,7 @@ WITH source AS (
         city
     FROM {{ ref('stg_listings__location') }}
     WHERE neighbourhood_cleansed IS NOT NULL
+        AND TRIM(neighbourhood_cleansed) != 'no asignado'
 )
 
 SELECT
