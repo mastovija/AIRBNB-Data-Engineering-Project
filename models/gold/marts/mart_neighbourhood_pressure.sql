@@ -79,6 +79,8 @@ SELECT
 FROM fact f
 LEFT JOIN {{ ref('dim_listing') }} dl
     ON f.listing_id = dl.listing_id
+WHERE dl.neighbourhood_cleansed IS NOT NULL
+    AND dl.neighbourhood_cleansed != 'no asignado'  -- filtra barrios sin asignar
 GROUP BY
     dl.neighbourhood_cleansed,
     f.city
