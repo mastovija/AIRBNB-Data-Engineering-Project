@@ -87,6 +87,7 @@ joined AS (
         -- KPIs de ocupación e ingresos calculados por Inside Airbnb
         a.estimated_occupancy_l365d,
         a.estimated_revenue_l365d,
+        a.estimated_revenue_adjusted,
 
         -- Actividad de reviews
         r.number_of_reviews_ltm,    -- reviews últimos 12 meses
