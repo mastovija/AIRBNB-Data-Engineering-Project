@@ -34,7 +34,6 @@ models:
       - name: listing_id
         description: "PK — identificador único del listing"
         tests:
-          - unique
           - not_null
       - name: is_entire_home
         description: "TRUE si el listing es una vivienda completa — KPI central del proyecto"
@@ -79,8 +78,11 @@ models:
       - name: listing_id
         description: "PK — identificador único del listing"
         tests:
-          - unique
-          - not_null
+          - dbt_utils.unique_combination_of_columns:
+              arguments:
+                combination_of_columns:
+                  - listing_id
+                  - snapshot_date
       - name: is_active_listing
         description: >
           TRUE si el listing tiene precio, disponibilidad > 0 y

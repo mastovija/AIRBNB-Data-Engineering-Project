@@ -22,8 +22,8 @@
 {{
     config(
         materialized='incremental',
-        unique_key='listing_id'
-    )
+        unique_key=['listing_id', 'snapshot_date']
+        )
 }}
 
 -- Métricas de precio, disponibilidad y ocupación
@@ -64,6 +64,10 @@ location AS (
 host_listing AS (
     SELECT DISTINCT listing_id, host_id, city
     FROM {{ ref('stg_listings__host') }}
+    QUALIFY ROW_NUMBER() OVER (
+        PARTITION BY listing_id, city
+        ORDER BY listing_id
+    ) = 1
 ),
 
 joined AS (
@@ -139,6 +143,13 @@ joined AS (
         AND a.city = n.city
     LEFT JOIN room_type rt
         ON d.room_type = rt.room_type
+    -- Deduplicar a una fila por listing_id + snapshot_date
+    -- Los JOINs con Silver generan duplicados porque Bronze
+    -- tiene múltiples snapshots y Silver los lee todos
+    QUALIFY ROW_NUMBER() OVER (
+        PARTITION BY a.listing_id, a.last_scraped
+        ORDER BY a.listing_id
+    ) = 1
 )
 
 SELECT * FROM joined
