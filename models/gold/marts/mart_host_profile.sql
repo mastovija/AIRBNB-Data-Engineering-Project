@@ -15,6 +15,10 @@
 
 WITH fact AS (
     SELECT * FROM {{ ref('fact_listings') }}
+    WHERE snapshot_date = (
+        SELECT MAX(snapshot_date)
+        FROM {{ ref('fact_listings') }}
+    )
 ),
 
 host AS (

@@ -58,3 +58,7 @@ LEFT JOIN neighbourhood n
     AND l.city = n.city     -- city es parte de la NK de dim_neighbourhood
 LEFT JOIN room_type r
     ON d.room_type = r.room_type
+QUALIFY ROW_NUMBER() OVER (
+    PARTITION BY d.listing_id
+    ORDER BY d.listing_id
+) = 1
