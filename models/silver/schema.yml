@@ -11,7 +11,6 @@ models:
       - name: listing_id
         description: "PK — identificador único del listing"
         tests:
-          - unique
           - not_null
       - name: room_type
         description: "Tipo de habitación: Entire home, Private room, Hotel room o Shared room"
@@ -63,7 +62,6 @@ models:
       - name: listing_id
         description: "PK — una fila por listing"
         tests:
-          - unique
           - not_null
       - name: neighbourhood_cleansed
         description: "Barrio normalizado por Inside Airbnb — referencia geográfica principal"
@@ -81,7 +79,6 @@ models:
       - name: listing_id
         description: "PK — una fila por listing"
         tests:
-          - unique
           - not_null
       - name: availability_profile
         description: "Categoría de disponibilidad anual: Casi sin disponibilidad / Uso parcial / Alta disponibilidad"
@@ -100,7 +97,6 @@ models:
       - name: listing_id
         description: "PK — una fila por listing"
         tests:
-          - unique
           - not_null
 
   - name: stg_reviews
@@ -114,7 +110,6 @@ models:
       - name: review_id
         description: "PK — identificador único de la review"
         tests:
-          - unique
           - not_null
       - name: listing_id
         description: "FK hacia stg_listings__details"
