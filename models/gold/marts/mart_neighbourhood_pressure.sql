@@ -46,7 +46,7 @@ SELECT
     ROUND(MEDIAN(f.price_winsorized), 2)                   AS median_price_winsorized,
     ROUND(AVG(f.price_per_person), 2)                      AS avg_price_per_person,    -- CU 3.2
     ROUND(AVG(f.estimated_occupancy_l365d), 1)             AS avg_occupancy_days,      -- CU 1.1
-    ROUND(AVG(f.estimated_revenue_l365d), 2)               AS avg_estimated_revenue,   -- CU 3.1
+    ROUND(AVG(f.estimated_revenue_adjusted), 2)            AS avg_estimated_revenue,   -- CU 3.1
 
     -- BLOQUE 2: ¿Quién captura la vivienda?
     -- Listings de hosts con más de 1 propiedad (Multipropiedad + Operador profesional)

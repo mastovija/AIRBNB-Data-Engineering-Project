@@ -49,7 +49,7 @@ SELECT
     ROUND(AVG(f.estimated_occupancy_l365d), 1) AS avg_occupancy,
 
     -- Ingresos anuales totales estimados del host (suma de todos sus listings)
-    ROUND(SUM(f.estimated_revenue_l365d), 2)   AS estimated_annual_revenue,
+    ROUND(SUM(f.estimated_revenue_adjusted), 2) AS estimated_annual_revenue,
 
     h.host_is_superhost                        AS is_superhost
 

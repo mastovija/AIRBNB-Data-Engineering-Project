@@ -36,7 +36,7 @@ SELECT
 
     -- Bloque 3: ocupación e ingresos
     ROUND(AVG(f.estimated_occupancy_l365d), 1)            AS avg_occupancy_days,
-    ROUND(AVG(f.estimated_revenue_l365d), 2)              AS avg_estimated_revenue,
+    ROUND(AVG(f.estimated_revenue_adjusted), 2)           AS avg_estimated_revenue,
 
     -- Bloque 2: concentración de hosts
     -- COUNT DISTINCT sobre dim_host para métricas a nivel de host,

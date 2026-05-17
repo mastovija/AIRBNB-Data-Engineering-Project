@@ -32,7 +32,7 @@ price_cleaned AS (
 percentiles AS (
     SELECT
         city,
-        PERCENTILE_CONT(0.99) WITHIN GROUP (ORDER BY price_numeric) AS p99_price
+        PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY price_numeric) AS p95_price
     FROM price_cleaned
     WHERE price_numeric IS NOT NULL
     GROUP BY city
@@ -50,12 +50,12 @@ final AS (
         -- El listing NO se elimina — solo se neutraliza el outlier en
         -- el campo de precio. Esto permite análisis de concentración
         -- geográfica con todos los listings.
-        LEAST(pc.price_numeric, p.p99_price)                   AS price_winsorized,
+        LEAST(pc.price_numeric, p.p95_price)                   AS price_winsorized,
 
         -- Precio por persona: normaliza listings de distinta capacidad.
         -- Un piso de 8 personas a 400€ es más barato que un estudio a
         -- 120€. NULLIF evita división por cero en listings sin capacidad.
-        LEAST(pc.price_numeric, p.p99_price)
+        LEAST(pc.price_numeric, p.p95_price)
             / NULLIF(TRY_CAST(pc.accommodates AS INTEGER), 0)  AS price_per_person,
 
         TRY_CAST(pc.minimum_nights AS INTEGER)                  AS minimum_nights,
@@ -102,6 +102,13 @@ final AS (
         TRY_CAST(
             REPLACE(REPLACE(pc.estimated_revenue_l365d, '$', ''), ',', '')
             AS FLOAT)                                           AS estimated_revenue_l365d,
+
+        -- Revenue ajustado: precio winsorizaddo × ocupación estimada
+        -- Más fiable que estimated_revenue_l365d de Inside Airbnb
+        -- que usa el precio original sin limpiar
+        LEAST(pc.price_numeric, p.p95_price)
+        * NULLIF(TRY_CAST(pc.estimated_occupancy_l365d AS FLOAT), 0)
+                                        AS estimated_revenue_adjusted,
 
         -- Fecha del scraping: usada como snapshot_date en fact_listings
         -- para la materialización incremental en Gold

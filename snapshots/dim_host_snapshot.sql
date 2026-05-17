@@ -10,7 +10,7 @@
 --
 -- Con un único snapshot se explica el mecanismo.
 -- Con dos snapshots se demuestra en producción: cargar el
--- snapshot de septiembre 2024 + ejecutar dbt snapshot muestra
+-- snapshot de septiembre 2025 + ejecutar dbt snapshot muestra
 -- hosts que cambiaron de perfil entre fechas.
 -- =============================================================
 
